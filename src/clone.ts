@@ -49,24 +49,24 @@ export const cloneVertexAttributeDescriptor = (descriptor?: GPUVertexAttributeDe
     shaderLocation: descriptor.shaderLocation,
 } as GPUVertexAttributeDescriptor);
 
-export const cloneVertexBufferDescriptor = (descriptor?: GPUVertexBufferDescriptor) => {
+export const cloneVertexBufferDescriptor = (descriptor?: GPUVertexBufferLayoutDescriptor) => {
     if (!descriptor) {
         return undefined;
     }
-    if (!descriptor.attributeSet) {
-        throw new Error('Missing attributeSet');
+    if (!descriptor.attributes) {
+        throw new Error('Missing attributes');
     }
-    if (typeof descriptor.attributeSet[Symbol.iterator] !== 'function') {
-        throw new Error('attributeSet is not iterable');
+    if (typeof descriptor.attributes[Symbol.iterator] !== 'function') {
+        throw new Error('attributes is not iterable');
     }
     return {
-        stride: descriptor.stride,
+        arrayStride: descriptor.arrayStride,
         stepMode: descriptor.stepMode,
-        attributeSet: Array.from(descriptor.attributeSet, cloneVertexAttributeDescriptor),
-    } as GPUVertexBufferDescriptor;
+        attributes: Array.from(descriptor.attributes, cloneVertexAttributeDescriptor),
+    } as GPUVertexBufferLayoutDescriptor;
 }
 
-export const cloneVertexInputDescriptor = (descriptor?: GPUVertexInputDescriptor) => {
+export const cloneVertexStateDescriptor = (descriptor?: GPUVertexStateDescriptor) => {
     if (!descriptor) {
         return undefined;
     }
@@ -76,7 +76,7 @@ export const cloneVertexInputDescriptor = (descriptor?: GPUVertexInputDescriptor
     return {
         indexFormat: descriptor.indexFormat,
         vertexBuffers: descriptor.vertexBuffers && Array.from(descriptor.vertexBuffers, cloneVertexBufferDescriptor),
-    } as GPUVertexInputDescriptor;
+    } as GPUVertexStateDescriptor;
 }
 
 export const cloneRenderPipelineDescriptor = (descriptor?: GPURenderPipelineDescriptor) => {
@@ -97,7 +97,7 @@ export const cloneRenderPipelineDescriptor = (descriptor?: GPURenderPipelineDesc
         rasterizationState: cloneRasterizationStateDescriptor(descriptor.rasterizationState),
         colorStates: Array.from(descriptor.colorStates, cloneColorStateDescriptor),
         depthStencilState: cloneDepthStencilStateDescriptor(descriptor.depthStencilState),
-        vertexInput: cloneVertexInputDescriptor(descriptor.vertexInput),
+        vertexState: cloneVertexStateDescriptor(descriptor.vertexState),
         sampleCount: descriptor.sampleCount,
         sampleMask: descriptor.sampleMask,
         alphaToCoverageEnabled: descriptor.alphaToCoverageEnabled,

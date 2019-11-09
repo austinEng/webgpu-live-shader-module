@@ -6,7 +6,7 @@ export declare const cloneColorStateDescriptor: (descriptor?: GPUColorStateDescr
 export declare const cloneStencilStateFaceDescriptor: (descriptor?: GPUStencilStateFaceDescriptor | undefined) => GPUStencilStateFaceDescriptor | undefined;
 export declare const cloneDepthStencilStateDescriptor: (descriptor?: GPUDepthStencilStateDescriptor | undefined) => GPUDepthStencilStateDescriptor | undefined;
 export declare const cloneVertexAttributeDescriptor: (descriptor?: GPUVertexAttributeDescriptor | undefined) => GPUVertexAttributeDescriptor | undefined;
-export declare const cloneVertexBufferDescriptor: (descriptor?: GPUVertexBufferDescriptor | undefined) => GPUVertexBufferDescriptor | undefined;
-export declare const cloneVertexInputDescriptor: (descriptor?: GPUVertexInputDescriptor | undefined) => GPUVertexInputDescriptor | undefined;
+export declare const cloneVertexBufferDescriptor: (descriptor?: GPUVertexBufferLayoutDescriptor | undefined) => GPUVertexBufferLayoutDescriptor | undefined;
+export declare const cloneVertexStateDescriptor: (descriptor?: GPUVertexStateDescriptor | undefined) => GPUVertexStateDescriptor | undefined;
 export declare const cloneRenderPipelineDescriptor: (descriptor?: GPURenderPipelineDescriptor | undefined) => GPURenderPipelineDescriptor | undefined;
 export declare const cloneComputePipelineDescriptor: (descriptor?: GPUComputePipelineDescriptor | undefined) => GPUComputePipelineDescriptor | undefined;

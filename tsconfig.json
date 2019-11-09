@@ -19,6 +19,7 @@
         "module": "es6",
         "moduleResolution": "node",
         "esModuleInterop": false,
+        "lib": ["es2015", "dom"],
     },
     "include": [
         "src/**/*.ts",
