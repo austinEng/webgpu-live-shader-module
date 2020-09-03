@@ -14,6 +14,7 @@
         "strictFunctionTypes": true,
         "strictNullChecks": true,
         "strictPropertyInitialization": true,
+        "allowSyntheticDefaultImports": true,
 
         /* Module Options */
         "module": "es6",
@@ -21,8 +22,4 @@
         "esModuleInterop": false,
         "lib": ["es2015", "dom"],
     },
-    "include": [
-        "src/**/*.ts",
-        "node_modules/@webgpu/types/index.d.ts"
-    ],
 }

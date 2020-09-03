@@ -2,6 +2,7 @@
     "name": "webgpu-live-shader-module",
     "version": "0.0.2",
     "main": "dist/index.js",
+    "types": "dist/index.d.ts",
     "author": "Austin Eng <enga@chromium.org>",
     "repository": {
         "type": "git",
@@ -12,10 +13,11 @@
         "start": "webpack --watch"
     },
     "dependencies": {
-        "webgpu-shader-module-transform": "austinEng/webgpu-shader-module-transform#23f7775f"
+        "clone-deep": "^4.0.1"
     },
     "devDependencies": {
-        "@webgpu/types": "^0.0.17",
+        "@types/clone-deep": "^4.0.1",
+        "@webgpu/types": "^0.0.31",
         "ts-loader": "^6.2.1",
         "typescript": "^3.7.2",
         "webpack": "^4.41.0",

@@ -1,2 +1,2 @@
 import { OnShaderRegisteredCallback } from './client';
-export default function install(onShaderRegistered?: OnShaderRegisteredCallback): void;
+export declare function setShaderRegisteredCallback(callback: OnShaderRegisteredCallback): void;

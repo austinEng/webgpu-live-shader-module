@@ -1,10 +1,8 @@
-import { GPUShaderModuleDescriptorWithTransform } from 'webgpu-shader-module-transform';
-
 const INFO = "__WEBGPU_LIVE_SHADER_INFO__";
 
 type GPUShaderModuleInfo = {
     device: GPUDevice,
-    descriptor: GPUShaderModuleDescriptorWithTransform,
+    descriptor: GPUShaderModuleDescriptor,
     id: string,
     replacement?: GPUShaderModule,
     generation: number,
@@ -13,7 +11,7 @@ type GPUShaderModuleInfo = {
 type GPUPipelineInfo = {
     device: GPUDevice,
     descriptor: GPURenderPipelineDescriptor | GPUComputePipelineDescriptor,
-    replacement?: GPURenderPipeline,
+    replacement?: GPURenderPipeline | GPUComputePipeline,
     registrationGeneration: number,
     vertexStageGeneration: number,
     fragmentStageGeneration: number,
@@ -34,7 +32,7 @@ interface GPUComputePipelineWithInfo extends GPUComputePipeline {
 
 const randomId = () => Math.random().toString(36).substring(2, 15);
 
-export function initializeShaderModuleInfo(device: GPUDevice, descriptor: GPUShaderModuleDescriptorWithTransform, obj: GPUShaderModule): GPUShaderModuleInfo {
+export function initializeShaderModuleInfo(device: GPUDevice, descriptor: GPUShaderModuleDescriptor, obj: GPUShaderModule): GPUShaderModuleInfo {
     if (INFO in obj) {
         return (obj as GPUShaderModuleWithInfo)[INFO];
     }

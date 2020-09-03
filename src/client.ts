@@ -1,22 +1,24 @@
-
-import { GPUDeviceWithShaderModuleDescriptorTransform, GPUShaderModuleDescriptorWithTransform, GPUShaderSource } from 'webgpu-shader-module-transform';
-import { cloneShaderModuleDescriptor, cloneRenderPipelineDescriptor, cloneComputePipelineDescriptor } from './clone';
+import cloneDeep from 'clone-deep';
 import { initializeShaderModuleInfo, initializeRenderPipelineInfo, initializeComputePipelineInfo, getPipelineInfo, getShaderModuleInfo } from './objectInfo';
 
+function clone<T>(obj: T) {
+    return cloneDeep(obj) as T;
+}
+
 type ClientFunctions = {
-    createShaderModule: GPUDeviceWithShaderModuleDescriptorTransform["createShaderModule"],
+    createShaderModule: GPUDevice["createShaderModule"],
     createRenderPipeline: GPUDevice["createRenderPipeline"],
     createComputePipeline: GPUDevice["createComputePipeline"],
     setRenderPipeline: GPURenderPassEncoder["setPipeline"],
     setComputePipeline: GPUComputePassEncoder["setPipeline"]
 }
 
-export type OnShaderRegisteredCallback = (source: GPUShaderSource, updateCallback: (updatedSource: GPUShaderSource) => void) => void;
+export type OnShaderRegisteredCallback = (source: any, updateCallback: (updatedSource: any) => void) => void;
 
-export default class Client {
+class Client {
     _fn: ClientFunctions;
     _registrationGeneration: number = 1;
-    _shaderModuleUpdates: Map<string, GPUShaderSource> = new Map();
+    _shaderModuleUpdates: Map<string, any> = new Map();
     _onShaderRegistered?: OnShaderRegisteredCallback;
 
     constructor(fn: ClientFunctions, onShaderRegistered?: OnShaderRegisteredCallback) {
@@ -24,8 +26,12 @@ export default class Client {
         this._onShaderRegistered = onShaderRegistered;
     }
 
-    createShaderModule(device: GPUDeviceWithShaderModuleDescriptorTransform, descriptor: GPUShaderModuleDescriptorWithTransform): GPUShaderModule {
-        descriptor = cloneShaderModuleDescriptor(descriptor)!;
+    setOnShaderRegisteredCallback(callback: OnShaderRegisteredCallback) {
+        this._onShaderRegistered = callback;
+    }
+
+    createShaderModule(device: GPUDevice, descriptor: GPUShaderModuleDescriptor): GPUShaderModule {
+        descriptor = clone(descriptor)!;
 
         const shaderModule = this._fn.createShaderModule.call(device, descriptor);
         initializeShaderModuleInfo(device, descriptor, shaderModule);
@@ -34,7 +40,7 @@ export default class Client {
     }
 
     createRenderPipeline(device: GPUDevice, descriptor: GPURenderPipelineDescriptor): GPURenderPipeline {
-        descriptor = cloneRenderPipelineDescriptor(descriptor)!;
+        descriptor = clone(descriptor)!;
 
         const pipeline = this._fn.createRenderPipeline.call(device, descriptor);
         initializeRenderPipelineInfo(device, descriptor, pipeline);
@@ -43,7 +49,7 @@ export default class Client {
     }
 
     createComputePipeline(device: GPUDevice, descriptor: GPUComputePipelineDescriptor): GPUComputePipeline {
-        descriptor = cloneComputePipelineDescriptor(descriptor)!;
+        descriptor = clone(descriptor)!;
 
         const pipeline = this._fn.createComputePipeline.call(device, descriptor);
         initializeComputePipelineInfo(device, descriptor, pipeline);
@@ -59,8 +65,8 @@ export default class Client {
         const shaderModule = shaderStage.module;
         const info = getShaderModuleInfo(shaderModule);
 
-        if (this._onShaderRegistered && info.descriptor.source && info.descriptor.transform) {
-            this._onShaderRegistered(info.descriptor.source, (updatedSource: GPUShaderSource) => {
+        if (this._onShaderRegistered) {
+            this._onShaderRegistered(info.descriptor.code, (updatedSource: any) => {
                 this._shaderModuleUpdates.set(info.id, updatedSource);
             });
         }
@@ -99,7 +105,7 @@ export default class Client {
 
         if (this._shaderModuleUpdates.has(info.id)) {
             const shaderSource = this._shaderModuleUpdates.get(info.id);
-            info.descriptor.source = shaderSource;
+            info.descriptor.code = shaderSource;
 
             this._shaderModuleUpdates.delete(info.id);
 
@@ -173,14 +179,22 @@ export default class Client {
     setRenderPipeline(encoder: GPURenderPassEncoder, pipeline: GPURenderPipeline): void {
         this.registerRenderPipelineShaders(pipeline);
         this.updatePipeline(pipeline);
-        pipeline = getPipelineInfo(pipeline).replacement || pipeline;
+        pipeline = getPipelineInfo(pipeline).replacement as GPURenderPipeline || pipeline;
         return this._fn.setRenderPipeline.call(encoder, pipeline);
     }
 
     setComputePipeline(encoder: GPUComputePassEncoder, pipeline: GPUComputePipeline): void {
         this.registerComputePipelineShaders(pipeline);
         this.updatePipeline(pipeline);
-        pipeline = getPipelineInfo(pipeline).replacement || pipeline;
+        pipeline = getPipelineInfo(pipeline).replacement as GPUComputePipeline || pipeline;
         return this._fn.setComputePipeline.call(encoder, pipeline);
     }
 };
+
+export const client = navigator.gpu ? new Client({
+  createShaderModule: GPUDevice.prototype.createShaderModule,
+  createRenderPipeline: GPUDevice.prototype.createRenderPipeline,
+  createComputePipeline: GPUDevice.prototype.createComputePipeline,
+  setRenderPipeline: GPURenderPassEncoder.prototype.setPipeline,
+  setComputePipeline: GPUComputePassEncoder.prototype.setPipeline,
+}) : undefined!;
