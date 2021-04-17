@@ -8,7 +8,9 @@ function clone<T>(obj: T) {
 type ClientFunctions = {
     createShaderModule: GPUDevice["createShaderModule"],
     createRenderPipeline: GPUDevice["createRenderPipeline"],
+    createRenderPipelineAsync: GPUDevice["createRenderPipelineAsync"],
     createComputePipeline: GPUDevice["createComputePipeline"],
+    createComputePipelineAsync: GPUDevice["createComputePipelineAsync"],
     setRenderPipeline: GPURenderPassEncoder["setPipeline"],
     setComputePipeline: GPUComputePassEncoder["setPipeline"]
 }
@@ -48,10 +50,28 @@ class Client {
         return pipeline;
     }
 
+    async createRenderPipelineAsync(device: GPUDevice, descriptor: GPURenderPipelineDescriptor): GPURenderPipeline {
+        descriptor = clone(descriptor)!;
+
+        const pipeline = await this._fn.createRenderPipelineAsync.call(device, descriptor);
+        initializeRenderPipelineInfo(device, descriptor, pipeline);
+
+        return pipeline;
+    }
+
     createComputePipeline(device: GPUDevice, descriptor: GPUComputePipelineDescriptor): GPUComputePipeline {
         descriptor = clone(descriptor)!;
 
         const pipeline = this._fn.createComputePipeline.call(device, descriptor);
+        initializeComputePipelineInfo(device, descriptor, pipeline);
+
+        return pipeline;
+    }
+
+    async createComputePipelineAsync(device: GPUDevice, descriptor: GPUComputePipelineDescriptor): GPUComputePipeline {
+        descriptor = clone(descriptor)!;
+
+        const pipeline = await this._fn.createComputePipelineAsync.call(device, descriptor);
         initializeComputePipelineInfo(device, descriptor, pipeline);
 
         return pipeline;
@@ -79,9 +99,9 @@ class Client {
         }
         info.registrationGeneration = this._registrationGeneration;
 
-        const descriptor = info.descriptor as GPURenderPipelineDescriptor;
-        this.registerShaderStage(descriptor.vertexStage);
-        this.registerShaderStage(descriptor.fragmentStage);
+        const descriptor = info.descriptor as GPURenderPipelineDescriptorNew | GPURenderPipelineDescriptorOld;
+        this.registerShaderStage('vertex' in descriptor ? descriptor.vertex : descriptor.vertexStage);
+        this.registerShaderStage('fragment' in descriptor ? descriptor.fragment : 'fragmentStage' in descriptor ? descriptor.fragmentStage : undefined);
     }
 
     private registerComputePipelineShaders(pipeline: GPUComputePipeline) {
@@ -91,11 +111,11 @@ class Client {
         }
         info.registrationGeneration = this._registrationGeneration;
 
-        const descriptor = info.descriptor as GPUComputePipelineDescriptor;
-        this.registerShaderStage(descriptor.computeStage);
+        const descriptor = info.descriptor as GPUComputePipelineDescriptorNew | GPUComputePipelineDescriptorOld;
+        this.registerShaderStage('compute' in descriptor ? descriptor.compute : descriptor.computeStage);
     }
 
-    private updateShaderStage(shaderStage?: GPUProgrammableStageDescriptor): number | undefined {
+    private updateShaderStage(shaderStage?: GPUProgrammableStage): number | undefined {
         if (!shaderStage || !shaderStage.module) {
             return undefined;
         }
@@ -136,15 +156,32 @@ class Client {
         let fragmentStageGeneration = undefined;
         let computeStageGeneration = undefined;
 
-        if ('vertexStage' in descriptor) {
-            vertexStageGeneration = this.updateShaderStage(descriptor.vertexStage);
+        let vertex: GPUProgrammableStage | undefined;
+        let fragment: GPUProgrammableStage | undefined;
+        let compute: GPUProgrammableStage | undefined;
+        let vertexStage: GPUProgrammableStage | undefined;
+        let fragmentStage: GPUProgrammableStage | undefined;
+        let computeStage: GPUProgrammableStage | undefined;
+
+        if ('vertex' in descriptor) {
+            vertex = descriptor.vertex;
+        } else if ('vertexStage' in descriptor) {
+            vertexStage = descriptor.vertexStage;
         }
-        if ('fragmentStage' in descriptor) {
-            fragmentStageGeneration = this.updateShaderStage(descriptor.fragmentStage);
+        if ('fragment' in descriptor) {
+            fragment = descriptor.fragment;
+        } else if ('fragmentStage' in descriptor) {
+            fragmentStage = descriptor.fragmentStage;
         }
-        if ('computeStage' in descriptor) {
-            computeStageGeneration = this.updateShaderStage(descriptor.computeStage);
+        if ('compute' in descriptor ) {
+            compute = descriptor.compute;
+        } else if ('computeStage' in descriptor) {
+            computeStage = descriptor.computeStage;
         }
+
+        vertexStageGeneration = this.updateShaderStage(vertex) || this.updateShaderStage(vertexStage);
+        fragmentStageGeneration = this.updateShaderStage(fragment) || this.updateShaderStage(fragmentStage);
+        computeStageGeneration = this.updateShaderStage(compute) || this.updateShaderStage(computeStage);
 
         const vertexStageUpdated = (vertexStageGeneration !== undefined && vertexStageGeneration !== info.vertexStageGeneration);
         const fragmentStageUpdated = (fragmentStageGeneration !== undefined && fragmentStageGeneration !== info.fragmentStageGeneration);
@@ -156,23 +193,36 @@ class Client {
 
         if (vertexStageUpdated) {
             // @ts-ignore
-            descriptor.vertexStage.module = getShaderModuleInfo(descriptor.vertexStage.module).replacement;
+            if (vertex) descriptor.vertex.module = getShaderModuleInfo(descriptor.vertex.module).replacement;
+
+            // @ts-ignore
+            if (vertexStage) descriptor.vertexStage.module = getShaderModuleInfo(descriptor.vertexStage.module).replacement;
         }
 
         if (fragmentStageUpdated) {
             // @ts-ignore
-            descriptor.fragmentStage.module = getShaderModuleInfo(descriptor.fragmentStage.module).replacement;
+            if (fragment) descriptor.fragment.module = getShaderModuleInfo(descriptor.fragment.module).replacement;
+
+            // @ts-ignore
+            if (fragmentStage) descriptor.fragmentStage.module = getShaderModuleInfo(descriptor.fragmentStage.module).replacement;
         }
 
         if (computeStageUpdated) {
             // @ts-ignore
-            descriptor.computeStage.module = getShaderModuleInfo(descriptor.computeStage.module).replacement;
+            if (compute) descriptor.compute.module = getShaderModuleInfo(descriptor.compute.module).replacement;
+
+            // @ts-ignore
+            if (computeStage) descriptor.computeStage.module = getShaderModuleInfo(descriptor.computeStage.module).replacement;
         }
 
         if (vertexStageUpdated || fragmentStageUpdated) {
-            info.replacement = this._fn.createRenderPipeline.call(info.device, descriptor as GPURenderPipelineDescriptor);
+            this._fn.createRenderPipelineAsync.call(info.device, descriptor as GPURenderPipelineDescriptor).then(pipeline => {
+                info.replacement = pipeline;
+            });
         } else if (computeStageUpdated) {
-            info.replacement = this._fn.createComputePipeline.call(info.device, descriptor as GPUComputePipelineDescriptor);
+            this._fn.createComputePipelineAsync.call(info.device, descriptor as GPUComputePipelineDescriptor).then(pipeline => {
+                info.replacement = pipeline;
+            });
         }
     }
 
@@ -194,7 +244,9 @@ class Client {
 export const client = navigator.gpu ? new Client({
   createShaderModule: GPUDevice.prototype.createShaderModule,
   createRenderPipeline: GPUDevice.prototype.createRenderPipeline,
+  createRenderPipelineAsync: GPUDevice.prototype.createRenderPipelineAsync,
   createComputePipeline: GPUDevice.prototype.createComputePipeline,
+  createComputePipelineAsync: GPUDevice.prototype.createComputePipelineAsync,
   setRenderPipeline: GPURenderPassEncoder.prototype.setPipeline,
   setComputePipeline: GPUComputePassEncoder.prototype.setPipeline,
 }) : undefined!;

@@ -21,11 +21,23 @@ if (navigator.gpu) {
     ): GPURenderPipeline {
       return client.createRenderPipeline(this, descriptor);
     },
+    async createRenderPipelineAsync(
+      this: GPUDevice,
+      descriptor: GPURenderPipelineDescriptor
+    ): GPURenderPipeline {
+      return client.createRenderPipelineAsync(this, descriptor);
+    },
     createComputePipeline(
       this: GPUDevice,
       descriptor: GPUComputePipelineDescriptor
     ): GPUComputePipeline {
       return client.createComputePipeline(this, descriptor);
+    },
+    async createComputePipelineAsync(
+      this: GPUDevice,
+      descriptor: GPUComputePipelineDescriptor
+    ): GPUComputePipeline {
+      return client.createComputePipelineAsync(this, descriptor);
     },
   });
 
@@ -44,4 +56,3 @@ if (navigator.gpu) {
     },
   });
 }
-
