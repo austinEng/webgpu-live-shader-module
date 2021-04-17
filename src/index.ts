@@ -3,8 +3,8 @@
 
 import { client, OnShaderRegisteredCallback } from './client';
 
-export function setShaderRegisteredCallback(callback: OnShaderRegisteredCallback) {
-  client.setOnShaderRegisteredCallback(callback);
+export function setShaderRegisteredCallback(device: GPUDevice, callback: OnShaderRegisteredCallback) {
+  client.setOnShaderRegisteredCallback(device, callback);
 }
 
 if (navigator.gpu) {

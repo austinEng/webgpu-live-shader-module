@@ -1,5 +1,5 @@
 import cloneDeep from 'clone-deep';
-import { initializeShaderModuleInfo, initializeRenderPipelineInfo, initializeComputePipelineInfo, getPipelineInfo, getShaderModuleInfo } from './objectInfo';
+import { initializeDeviceInfo, initializeShaderModuleInfo, initializeRenderPipelineInfo, initializeComputePipelineInfo, getDeviceInfo, getPipelineInfo, getShaderModuleInfo } from './objectInfo';
 
 function clone<T>(obj: T) {
     return cloneDeep(obj) as T;
@@ -21,15 +21,13 @@ class Client {
     _fn: ClientFunctions;
     _registrationGeneration: number = 1;
     _shaderModuleUpdates: Map<string, any> = new Map();
-    _onShaderRegistered?: OnShaderRegisteredCallback;
 
-    constructor(fn: ClientFunctions, onShaderRegistered?: OnShaderRegisteredCallback) {
+    constructor(fn: ClientFunctions) {
         this._fn = fn;
-        this._onShaderRegistered = onShaderRegistered;
     }
 
-    setOnShaderRegisteredCallback(callback: OnShaderRegisteredCallback) {
-        this._onShaderRegistered = callback;
+    setOnShaderRegisteredCallback(device: GPUDevice, callback: OnShaderRegisteredCallback) {
+        initializeDeviceInfo(device).onShaderRegisteredCallback = callback;
     }
 
     createShaderModule(device: GPUDevice, descriptor: GPUShaderModuleDescriptor): GPUShaderModule {
@@ -85,8 +83,9 @@ class Client {
         const shaderModule = shaderStage.module;
         const info = getShaderModuleInfo(shaderModule);
 
-        if (this._onShaderRegistered) {
-            this._onShaderRegistered(info.descriptor.code, (updatedSource: any) => {
+        const callback = getDeviceInfo(info.device)?.onShaderRegisteredCallback;
+        if (callback !== undefined) {
+            callback(info.descriptor.code, (updatedSource: any) => {
                 this._shaderModuleUpdates.set(info.id, updatedSource);
             });
         }

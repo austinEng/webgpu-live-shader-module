@@ -13,9 +13,8 @@ declare class Client {
     _fn: ClientFunctions;
     _registrationGeneration: number;
     _shaderModuleUpdates: Map<string, any>;
-    _onShaderRegistered?: OnShaderRegisteredCallback;
-    constructor(fn: ClientFunctions, onShaderRegistered?: OnShaderRegisteredCallback);
-    setOnShaderRegisteredCallback(callback: OnShaderRegisteredCallback): void;
+    constructor(fn: ClientFunctions);
+    setOnShaderRegisteredCallback(device: GPUDevice, callback: OnShaderRegisteredCallback): void;
     createShaderModule(device: GPUDevice, descriptor: GPUShaderModuleDescriptor): GPUShaderModule;
     createRenderPipeline(device: GPUDevice, descriptor: GPURenderPipelineDescriptor): GPURenderPipeline;
     createRenderPipelineAsync(device: GPUDevice, descriptor: GPURenderPipelineDescriptor): GPURenderPipeline;
