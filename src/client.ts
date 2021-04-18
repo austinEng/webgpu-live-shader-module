@@ -1,5 +1,6 @@
 import cloneDeep from 'clone-deep';
-import { initializeDeviceInfo, initializeShaderModuleInfo, initializeRenderPipelineInfo, initializeComputePipelineInfo, getDeviceInfo, getPipelineInfo, getShaderModuleInfo } from './objectInfo';
+import { LiveShaderSource } from '.';
+import { initializeShaderModuleInfo, initializeRenderPipelineInfo, initializeComputePipelineInfo, getPipelineInfo, getShaderModuleInfo } from './objectInfo';
 
 function clone<T>(obj: T) {
     return cloneDeep(obj) as T;
@@ -15,8 +16,6 @@ type ClientFunctions = {
     setComputePipeline: GPUComputePassEncoder["setPipeline"]
 }
 
-export type OnShaderRegisteredCallback = (source: any, updateCallback: (updatedSource: any) => void) => void;
-
 class Client {
     _fn: ClientFunctions;
     _registrationGeneration: number = 1;
@@ -24,10 +23,6 @@ class Client {
 
     constructor(fn: ClientFunctions) {
         this._fn = fn;
-    }
-
-    setOnShaderRegisteredCallback(device: GPUDevice, callback: OnShaderRegisteredCallback) {
-        initializeDeviceInfo(device).onShaderRegisteredCallback = callback;
     }
 
     createShaderModule(device: GPUDevice, descriptor: GPUShaderModuleDescriptor): GPUShaderModule {
@@ -48,7 +43,7 @@ class Client {
         return pipeline;
     }
 
-    async createRenderPipelineAsync(device: GPUDevice, descriptor: GPURenderPipelineDescriptor): GPURenderPipeline {
+    async createRenderPipelineAsync(device: GPUDevice, descriptor: GPURenderPipelineDescriptor): Promise<GPURenderPipeline> {
         descriptor = clone(descriptor)!;
 
         const pipeline = await this._fn.createRenderPipelineAsync.call(device, descriptor);
@@ -66,7 +61,7 @@ class Client {
         return pipeline;
     }
 
-    async createComputePipelineAsync(device: GPUDevice, descriptor: GPUComputePipelineDescriptor): GPUComputePipeline {
+    async createComputePipelineAsync(device: GPUDevice, descriptor: GPUComputePipelineDescriptor): Promise<GPUComputePipeline> {
         descriptor = clone(descriptor)!;
 
         const pipeline = await this._fn.createComputePipelineAsync.call(device, descriptor);
@@ -83,9 +78,8 @@ class Client {
         const shaderModule = shaderStage.module;
         const info = getShaderModuleInfo(shaderModule);
 
-        const callback = getDeviceInfo(info.device)?.onShaderRegisteredCallback;
-        if (callback !== undefined) {
-            callback(info.descriptor.code, (updatedSource: any) => {
+        if (info.descriptor.code instanceof LiveShaderSource) {
+            info.descriptor.code.watch((updatedSource) => {
                 this._shaderModuleUpdates.set(info.id, updatedSource);
             });
         }
@@ -240,7 +234,7 @@ class Client {
     }
 };
 
-export const client = navigator.gpu ? new Client({
+export const client = typeof GPUDevice !== 'undefined' ? new Client({
   createShaderModule: GPUDevice.prototype.createShaderModule,
   createRenderPipeline: GPUDevice.prototype.createRenderPipeline,
   createRenderPipelineAsync: GPUDevice.prototype.createRenderPipelineAsync,

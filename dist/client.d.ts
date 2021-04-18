@@ -1,4 +1,4 @@
-/// <reference types="@webgpu/types" />
+/// <reference types="dist" />
 declare type ClientFunctions = {
     createShaderModule: GPUDevice["createShaderModule"];
     createRenderPipeline: GPUDevice["createRenderPipeline"];
@@ -8,18 +8,16 @@ declare type ClientFunctions = {
     setRenderPipeline: GPURenderPassEncoder["setPipeline"];
     setComputePipeline: GPUComputePassEncoder["setPipeline"];
 };
-export declare type OnShaderRegisteredCallback = (source: any, updateCallback: (updatedSource: any) => void) => void;
 declare class Client {
     _fn: ClientFunctions;
     _registrationGeneration: number;
     _shaderModuleUpdates: Map<string, any>;
     constructor(fn: ClientFunctions);
-    setOnShaderRegisteredCallback(device: GPUDevice, callback: OnShaderRegisteredCallback): void;
     createShaderModule(device: GPUDevice, descriptor: GPUShaderModuleDescriptor): GPUShaderModule;
     createRenderPipeline(device: GPUDevice, descriptor: GPURenderPipelineDescriptor): GPURenderPipeline;
-    createRenderPipelineAsync(device: GPUDevice, descriptor: GPURenderPipelineDescriptor): GPURenderPipeline;
+    createRenderPipelineAsync(device: GPUDevice, descriptor: GPURenderPipelineDescriptor): Promise<GPURenderPipeline>;
     createComputePipeline(device: GPUDevice, descriptor: GPUComputePipelineDescriptor): GPUComputePipeline;
-    createComputePipelineAsync(device: GPUDevice, descriptor: GPUComputePipelineDescriptor): GPUComputePipeline;
+    createComputePipelineAsync(device: GPUDevice, descriptor: GPUComputePipelineDescriptor): Promise<GPUComputePipeline>;
     private registerShaderStage;
     private registerRenderPipelineShaders;
     private registerComputePipelineShaders;

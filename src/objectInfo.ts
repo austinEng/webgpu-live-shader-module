@@ -1,11 +1,5 @@
 const INFO = "__WEBGPU_LIVE_SHADER_INFO__";
 
-import { OnShaderRegisteredCallback } from './client';
-
-type GPUDeviceInfo = {
-    onShaderRegisteredCallback?: OnShaderRegisteredCallback;
-}
-
 type GPUShaderModuleInfo = {
     device: GPUDevice,
     descriptor: GPUShaderModuleDescriptor,
@@ -24,10 +18,6 @@ type GPUPipelineInfo = {
     computeStageGeneration: number,
 }
 
-interface GPUDeviceWithInfo extends GPUDevice {
-    [INFO]: GPUDeviceInfo
-}
-
 interface GPUShaderModuleWithInfo extends GPUShaderModule {
     [INFO]: GPUShaderModuleInfo
 }
@@ -41,15 +31,6 @@ interface GPUComputePipelineWithInfo extends GPUComputePipeline {
 }
 
 const randomId = () => Math.random().toString(36).substring(2, 15);
-
-export function initializeDeviceInfo(obj: GPUDevice): GPUDeviceInfo {
-    if (INFO in obj) {
-        return (obj as GPUDeviceWithInfo)[INFO];
-    }
-    const info: GPUDeviceInfo = {};
-    (obj as GPUDeviceWithInfo)[INFO] = info;
-    return info;
-}
 
 export function initializeShaderModuleInfo(device: GPUDevice, descriptor: GPUShaderModuleDescriptor, obj: GPUShaderModule): GPUShaderModuleInfo {
     if (INFO in obj) {
@@ -95,10 +76,6 @@ export function initializeComputePipelineInfo(device: GPUDevice, descriptor: GPU
     };
     (obj as GPUComputePipelineWithInfo)[INFO] = info;
     return info;
-}
-
-export function getDeviceInfo(obj: GPUDevice | GPUDeviceWithInfo): GPUDeviceInfo | undefined {
-    return INFO in obj ? (obj as GPUDeviceWithInfo)[INFO] : undefined;
 }
 
 export function getShaderModuleInfo(obj: GPUShaderModule): GPUShaderModuleInfo {
